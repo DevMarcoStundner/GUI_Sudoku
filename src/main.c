@@ -1,4 +1,4 @@
-/*
+/* 
 * Author: Stundner Maroc
 * Filename: main.c
 * Task: GTK3 GUI Sudoku
@@ -10,30 +10,49 @@
 
 #include <gtk/gtk.h>
 
+#define SudokuX 8
+#define SudokuY 8
+
 struct widget
 {
-
+    GtkWidget *entry[81]; 
+    GtkWidget *grid;
 };
+
+#define B(IDX,IDY) \
+	w->entry[IDX] = gtk_entry_new(); \
+	gtk_widget_set_size_request(w->entry[IDX],50, 50); \
+    gtk_entry_set_width_chars(w->entry[IDX],4);\
+    gtk_entry_set_alignment(w->entry[IDX],0.5);\
+    gtk_grid_attach(GTK_GRID(w->grid),w->entry[IDX],IDX,IDY,1,1);
+
+
 
 static void activate (GtkApplication *app, gpointer user_data)
 {
     GtkWidget *window;
-    GtkWidget *box;
+
+
+    struct widget *w = (struct widget *)user_data;
 
     // create the window and associate a title
     window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_application (GTK_WINDOW (window), GTK_APPLICATION (app));
 	gtk_window_set_title (GTK_WINDOW (window), "Sudoku");
-    gtk_window_set_default_size(GTK_WINDOW(window), 300, 400);
+    //gtk_window_set_default_size(GTK_WINDOW(window), 300, 400);
     gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
-    gtk_container_set_border_width(GTK_CONTAINER(window), 5);
 
-    // Create a box and add it to the window 
-    box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 5);
-    gtk_container_add(GTK_CONTAINER(window), box);
+    w->grid = gtk_grid_new();
+    gtk_container_add(GTK_CONTAINER(window),w->grid);
+    
 
-
-
+    for(int i = 0; i <= SudokuX; i++)
+    {
+        for(int j = 0; j <= SudokuY; j++)
+        {
+            B(i,j);
+        }
+    }
 
 
     gtk_widget_show_all (GTK_WIDGET (window));

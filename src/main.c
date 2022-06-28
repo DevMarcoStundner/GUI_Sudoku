@@ -105,16 +105,16 @@ static void sudoku_build (GtkWidget *widget, gpointer user_data)
     {
         buffer[0] = *(g_ascii_dtostr(buffer,2,(double) w->puzzle[i]));   
         const char *buffer_entry = buffer;
-        printf("%i buffer_entry: %s\n",i,buffer_entry);
+        /* printf("%i buffer_entry: %s\n",i,buffer_entry);
         printf("%i buffer: %s\n",i,buffer);
-        printf("%i puzzle: %d\n\n",i,w->puzzle[i]);
+        printf("%i puzzle: %d\n\n",i,w->puzzle[i]); */
 
         gtk_entry_set_text(GTK_ENTRY(w->entry[i]),buffer_entry);
         if(w->puzzle[i] == 0)
         {
-            gtk_entry_set_text(GTK_ENTRY(w->entry[i]),"");   
+            gtk_entry_set_text(GTK_ENTRY(w->entry[i])," ");   
         }  
-    }
+    } 
 
 }
 

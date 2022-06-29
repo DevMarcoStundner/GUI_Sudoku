@@ -1,0 +1,6 @@
+ .sudoku-prefilled{
+     background: #ddd;
+     }
+.sudoku-wrong {
+     background: #f00;
+     }

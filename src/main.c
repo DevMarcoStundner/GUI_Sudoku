@@ -5,7 +5,8 @@
 * https://github.com/DevMarcoStundner/GUI_Sudoku.git
 * Date 23.06.22
 * Build instructions:
-* clang main.c $(pkg-config --cflags --libs gtk+-3.0) -Wall -I. sudoku_c.c -lm
+* clang main.c $(pkg-config --cflags --libs gtk+-3.0) -Wall -I. sudoku_c.c sudoku_css.c -lm 
+* glib-compile-resources --sourcedir=. sudoku_css.gresource.xml --generate-source
 */
 
 #include <gtk/gtk.h>
@@ -25,7 +26,7 @@
 struct widget
 {
     GtkWidget *vbox;
-    GtkWidget *entry[81]; 
+    GtkWidget *entry[N*N]; 
     GtkWidget *grid;
     GtkWidget *menu;
     GtkWidget *menubar;
@@ -46,14 +47,9 @@ struct widget
     bool hard;
     bool normal;
     bool easy;
+    GtkStyleContext *context;
+	GtkStyleProvider *provider;
 };
-
-#define ent(IDX,IDY) \
-	w->entry[IDX] = gtk_entry_new(); \
-	gtk_widget_set_size_request(w->entry[IDX],50, 50); \
-    gtk_entry_set_width_chars(GTK_ENTRY(w->entry[IDX]),4);\
-    gtk_entry_set_alignment(GTK_ENTRY(w->entry[IDX]),0.5);\
-    gtk_grid_attach(GTK_GRID(w->grid),w->entry[IDX],IDX,IDY,1,1);
 
 
 static void quit_callback (GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -97,25 +93,25 @@ static void sudoku_build (GtkWidget *widget, gpointer user_data)
     sudoku_generate(w->solution);
     memcpy(w->puzzle,w->solution,sizeof(w->puzzle));
 
-    if(w->hard == true){sudoku_classic(w->puzzle,HARD);}
+    if(w->hard == true)  {sudoku_classic(w->puzzle,HARD);}
     if(w->normal == true){sudoku_classic(w->puzzle,NORMAL);}
-    if(w->easy == true){sudoku_classic(w->puzzle,EASY);}
+    if(w->easy == true)  {sudoku_classic(w->puzzle,EASY);}
 
     for(int i = 0; i <= N*N; i++)
     {
         buffer[0] = *(g_ascii_dtostr(buffer,2,(double) w->puzzle[i]));   
         const char *buffer_entry = buffer;
-        /* printf("%i buffer_entry: %s\n",i,buffer_entry);
-        printf("%i buffer: %s\n",i,buffer);
-        printf("%i puzzle: %d\n\n",i,w->puzzle[i]); */
 
         gtk_entry_set_text(GTK_ENTRY(w->entry[i]),buffer_entry);
+        w->context = gtk_widget_get_style_context (w->entry[i]);
+	    gtk_style_context_add_class (w->context, "sudoku-prefilled");
+        gtk_editable_set_editable(GTK_EDITABLE(w->entry[i]),false);
         if(w->puzzle[i] == 0)
         {
+            
             gtk_entry_set_text(GTK_ENTRY(w->entry[i])," ");   
         }  
     } 
-
 }
 
 
@@ -134,36 +130,38 @@ static void activate (GtkApplication *app, gpointer user_data)
     w->vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(window), w->vbox);
 
+
+
     //MENU@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-    w->menubar = gtk_menu_bar_new();
+    w->menubar        = gtk_menu_bar_new();
     w->difficultymenu = gtk_menu_new();
 
-    w->restart_m = gtk_menu_item_new_with_label("Restart");
+    w->restart_m    = gtk_menu_item_new_with_label("Restart");
     w->difficulty_m = gtk_menu_item_new_with_label("Difficulty");
-    w->highscore_m = gtk_menu_item_new_with_label("Highscore");
-    w->check_m = gtk_menu_item_new_with_label("Check");
-    w->quit_m = gtk_menu_item_new_with_label("Quit");
-    w->hard_m = gtk_menu_item_new_with_label("Hard");
-    w->normal_m = gtk_menu_item_new_with_label("Normal");
-    w->easy_m = gtk_menu_item_new_with_label("Easy");
+    w->highscore_m  = gtk_menu_item_new_with_label("Highscore");
+    w->check_m      = gtk_menu_item_new_with_label("Check");
+    w->quit_m       = gtk_menu_item_new_with_label("Quit");
+    w->hard_m       = gtk_menu_item_new_with_label("Hard");
+    w->normal_m     = gtk_menu_item_new_with_label("Normal");
+    w->easy_m       = gtk_menu_item_new_with_label("Easy");
 
-    gtk_menu_shell_append(GTK_MENU_SHELL(w->menubar), w->check_m);
-    gtk_menu_shell_append(GTK_MENU_SHELL(w->menubar), w->restart_m);
-    gtk_menu_item_set_submenu(GTK_MENU_ITEM(w->difficulty_m), w->difficultymenu);
-    gtk_menu_shell_append(GTK_MENU_SHELL(w->difficultymenu), w->hard_m);
-    gtk_menu_shell_append(GTK_MENU_SHELL(w->difficultymenu), w->normal_m);
-    gtk_menu_shell_append(GTK_MENU_SHELL(w->difficultymenu), w->easy_m);
-    gtk_menu_shell_append(GTK_MENU_SHELL(w->menubar), w->difficulty_m);
-    gtk_menu_shell_append(GTK_MENU_SHELL(w->menubar), w->highscore_m);
-    gtk_menu_shell_append(GTK_MENU_SHELL(w->menubar), w->quit_m);
+    gtk_menu_shell_append(GTK_MENU_SHELL    (w->menubar),        w->check_m);
+    gtk_menu_shell_append(GTK_MENU_SHELL    (w->menubar),        w->restart_m);
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM (w->difficulty_m),   w->difficultymenu);
+    gtk_menu_shell_append(GTK_MENU_SHELL    (w->difficultymenu), w->hard_m);
+    gtk_menu_shell_append(GTK_MENU_SHELL    (w->difficultymenu), w->normal_m);
+    gtk_menu_shell_append(GTK_MENU_SHELL    (w->difficultymenu), w->easy_m);
+    gtk_menu_shell_append(GTK_MENU_SHELL    (w->menubar),        w->difficulty_m);
+    gtk_menu_shell_append(GTK_MENU_SHELL    (w->menubar),        w->highscore_m);
+    gtk_menu_shell_append(GTK_MENU_SHELL    (w->menubar),        w->quit_m);
 
     gtk_box_pack_start(GTK_BOX(w->vbox), w->menubar, FALSE, FALSE, 0);
 
-    g_signal_connect(G_OBJECT(w->quit_m),"activate",G_CALLBACK(quit_callback), NULL);
+    g_signal_connect(G_OBJECT(w->quit_m),   "activate",G_CALLBACK(quit_callback), NULL);
     g_signal_connect(G_OBJECT(w->restart_m),"activate",G_CALLBACK(sudoku_build), w);
-    g_signal_connect(G_OBJECT(w->hard_m),"activate",G_CALLBACK(difficulty_callback_hard), w);
-    g_signal_connect(G_OBJECT(w->normal_m),"activate",G_CALLBACK(difficulty_callback_normal), w);
-    g_signal_connect(G_OBJECT(w->easy_m),"activate",G_CALLBACK(difficulty_callback_easy), w);
+    g_signal_connect(G_OBJECT(w->hard_m),   "activate",G_CALLBACK(difficulty_callback_hard), w);
+    g_signal_connect(G_OBJECT(w->normal_m), "activate",G_CALLBACK(difficulty_callback_normal), w);
+    g_signal_connect(G_OBJECT(w->easy_m),   "activate",G_CALLBACK(difficulty_callback_easy), w);
     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
@@ -171,14 +169,28 @@ static void activate (GtkApplication *app, gpointer user_data)
     w->grid = gtk_grid_new();
     gtk_box_pack_start(GTK_BOX(w->vbox),w->grid, TRUE, FALSE, 0);
     
-
-    for(int i = 0; i <= SudokuX; i++)
+    int x = 0;
+    int y = 0;
+    for(int i = 0; i<=N*N;i++)
     {
-        for(int j = 0; j <= SudokuY; j++)
+        w->entry[i] = gtk_entry_new(); 
+        gtk_widget_set_size_request(w->entry[i],50, 50); 
+        gtk_entry_set_width_chars(GTK_ENTRY(w->entry[i]),4);
+        gtk_entry_set_alignment(GTK_ENTRY(w->entry[i]),0.5);
+        gtk_grid_attach(GTK_GRID(w->grid),w->entry[i],x,y,1,1);
+        x++;
+        if(x == 9)
         {
-            ent(i,j);
-        }
+            x = 0;
+            if(y == 9)
+            {
+                y = 0;
+                break;
+            }
+            y++;
+        } 
     }
+    sudoku_build(w->grid,w);
     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 

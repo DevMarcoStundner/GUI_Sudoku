@@ -21,10 +21,11 @@
 #define SudokuY N-1
 #define HARD 60
 #define NORMAL 40
-#define EASY 20
+#define EASY 0
 
 struct widget
 {
+    GtkWidget *window;
     GtkWidget *vbox;
     GtkWidget *entry[N*N]; 
     GtkWidget *grid;
@@ -48,9 +49,71 @@ struct widget
     bool normal;
     bool easy;
     GtkStyleContext *context;
-	GtkStyleProvider *provider;
+	GtkCssProvider  *provider;
+    const char *text[N*N];
+    GtkWidget *message_dialog;
+    GtkWidget *label;
+
 };
 
+static void sudoku_build (GtkGrid *widget, gpointer user_data)
+{
+    struct widget *w = (struct widget *)user_data;  
+    char buffer[2]; 
+    sudoku_generate(w->solution);
+    memcpy(w->puzzle,w->solution,sizeof(w->puzzle));
+
+    if(w->hard == true)  {sudoku_classic(w->puzzle,HARD);}
+    if(w->normal == true){sudoku_classic(w->puzzle,NORMAL);}
+    if(w->easy == true)  {sudoku_classic(w->puzzle,EASY);}
+
+    w->provider = gtk_css_provider_new ();
+    gtk_css_provider_load_from_data (GTK_CSS_PROVIDER (w->provider), 
+        " .sudoku-prefilled {\n"
+        "   background: #bebebe;\n"
+        "}\n"
+        " .sudoku-wrong {\n"
+        "   background: #f00;\n"
+        "}\n", -1, NULL);
+    for(int i = 0; i <= N*N; i++)
+    {
+        w->context = gtk_widget_get_style_context (w->entry[i]);
+        if(w->context != 0)
+        {
+            gtk_style_context_add_provider(w->context,GTK_STYLE_PROVIDER(w->provider),GTK_STYLE_PROVIDER_PRIORITY_USER);
+            gtk_style_context_remove_class (w->context, "sudoku-prefilled");
+            gtk_style_context_remove_class (w->context, "sudoku-wrong");
+
+        }
+        gtk_editable_set_editable(GTK_EDITABLE(w->entry[i]),true);
+    }
+
+    for(int i = 0; i <= N*N; i++)
+    {
+        buffer[0] = *(g_ascii_dtostr(buffer,2,(double) w->puzzle[i]));   
+        const char *buffer_entry = buffer;
+
+        gtk_entry_set_text(GTK_ENTRY(w->entry[i]),buffer_entry);
+
+        w->context = gtk_widget_get_style_context (w->entry[i]);
+        if(w->puzzle[i] != 0)
+        {
+            if(w->context != 0)
+            {
+                gtk_style_context_add_provider(w->context,GTK_STYLE_PROVIDER(w->provider),GTK_STYLE_PROVIDER_PRIORITY_USER);
+                gtk_style_context_add_class (w->context, "sudoku-prefilled");
+            }
+            gtk_editable_set_editable(GTK_EDITABLE(w->entry[i]),false);
+        }
+        else
+        {
+            if(w->puzzle[i] == 0)
+            {   
+                gtk_entry_set_text(GTK_ENTRY(w->entry[i])," ");   
+            } 
+        }
+    } 
+}
 
 static void quit_callback (GSimpleAction *action, GVariant *parameter, gpointer user_data)
 {
@@ -66,6 +129,7 @@ static void difficulty_callback_hard (GtkWidget *widget, gpointer user_data)
     w->normal = false;
     w->easy = false;
     printf("Difficulty: Hard %d\n",w->hard);
+    sudoku_build(GTK_GRID(w->grid),w);
 }
 
 static void difficulty_callback_normal (GtkWidget *widget, gpointer user_data)
@@ -75,6 +139,7 @@ static void difficulty_callback_normal (GtkWidget *widget, gpointer user_data)
     w->normal = true;
     w->easy = false;
     printf("Difficulty: Normal %d\n",w->normal);
+    sudoku_build(GTK_GRID(w->grid),w);
 }
 
 static void difficulty_callback_easy (GtkWidget *widget, gpointer user_data)
@@ -84,53 +149,69 @@ static void difficulty_callback_easy (GtkWidget *widget, gpointer user_data)
     w->normal = false;
     w->easy = true;
     printf("Difficulty: Easy %d\n",w->easy);
+    sudoku_build(GTK_GRID(w->grid),w);
 }
 
-static void sudoku_build (GtkWidget *widget, gpointer user_data)
+static void on_response (GtkDialog *dialog, gint response_id, gpointer user_data)
 {
-    struct widget *w = (struct widget *)user_data;  
-    char buffer[2]; 
-    sudoku_generate(w->solution);
-    memcpy(w->puzzle,w->solution,sizeof(w->puzzle));
+	struct widget *w = (struct widget *)user_data;
 
-    if(w->hard == true)  {sudoku_classic(w->puzzle,HARD);}
-    if(w->normal == true){sudoku_classic(w->puzzle,NORMAL);}
-    if(w->easy == true)  {sudoku_classic(w->puzzle,EASY);}
-
-    for(int i = 0; i <= N*N; i++)
+	if (response_id == GTK_RESPONSE_OK)
     {
-        buffer[0] = *(g_ascii_dtostr(buffer,2,(double) w->puzzle[i]));   
-        const char *buffer_entry = buffer;
-
-        gtk_entry_set_text(GTK_ENTRY(w->entry[i]),buffer_entry);
-        w->context = gtk_widget_get_style_context (w->entry[i]);
-	    gtk_style_context_add_class (w->context, "sudoku-prefilled");
-        gtk_editable_set_editable(GTK_EDITABLE(w->entry[i]),false);
-        if(w->puzzle[i] == 0)
+		gtk_label_set_text (GTK_LABEL (w->label), "OK clicked!");
+    }
+	else
+    {
+        if (response_id == GTK_RESPONSE_DELETE_EVENT)
         {
-            
-            gtk_entry_set_text(GTK_ENTRY(w->entry[i])," ");   
-        }  
+            gtk_label_set_text (GTK_LABEL (w->label), "Dialog closed!");
+        }
     } 
+	gtk_widget_destroy (GTK_WIDGET (dialog));
 }
 
-
+static void check_callback (GtkWidget *widget, gpointer user_data)
+{
+    struct widget *w = (struct widget *)user_data;
+    int value = 0;
+    bool check_flag = false;
+    for(int i = 0; i <= (N*N)-1; i++)
+    {
+        w->context = gtk_widget_get_style_context (w->entry[i]);
+        gtk_style_context_remove_class (w->context, "sudoku-wrong");
+        w->text[i] = gtk_entry_get_text (GTK_ENTRY (w->entry[i]));
+        value = strtol(w->text[i],NULL,10);
+        if(value != w->solution[i])
+        {
+            w->context = gtk_widget_get_style_context (w->entry[i]);
+            if(w->context != 0)
+            {
+                gtk_style_context_add_provider(w->context,GTK_STYLE_PROVIDER(w->provider),GTK_STYLE_PROVIDER_PRIORITY_USER);
+                gtk_style_context_add_class (w->context, "sudoku-wrong");
+            }
+            check_flag = true;
+        }
+    }
+    if (check_flag == false)
+    {
+        w->message_dialog = gtk_message_dialog_new (GTK_WINDOW (w->window),GTK_DIALOG_MODAL,GTK_MESSAGE_WARNING,GTK_BUTTONS_OK,"RICHTIG :)");
+        gtk_widget_show_all (w->message_dialog);
+        g_signal_connect (GTK_DIALOG (w->message_dialog), "response", G_CALLBACK (on_response), w);
+    }
+    check_flag = false;
+}
 
 static void activate (GtkApplication *app, gpointer user_data)
 {
-    GtkWidget *window;
-
     struct widget *w = (struct widget *)user_data;
 
-    window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
-	gtk_window_set_application (GTK_WINDOW (window), GTK_APPLICATION (app));
-	gtk_window_set_title (GTK_WINDOW (window), "Sudoku");
-    gtk_window_set_resizable(GTK_WINDOW(window), FALSE);
+    w->window = gtk_window_new (GTK_WINDOW_TOPLEVEL);
+	gtk_window_set_application (GTK_WINDOW (w->window), GTK_APPLICATION (app));
+	gtk_window_set_title (GTK_WINDOW (w->window), "Sudoku");
+    gtk_window_set_resizable(GTK_WINDOW(w->window), FALSE);
 
     w->vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
-    gtk_container_add(GTK_CONTAINER(window), w->vbox);
-
-
+    gtk_container_add(GTK_CONTAINER(w->window), w->vbox);
 
     //MENU@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
     w->menubar        = gtk_menu_bar_new();
@@ -158,6 +239,7 @@ static void activate (GtkApplication *app, gpointer user_data)
     gtk_box_pack_start(GTK_BOX(w->vbox), w->menubar, FALSE, FALSE, 0);
 
     g_signal_connect(G_OBJECT(w->quit_m),   "activate",G_CALLBACK(quit_callback), NULL);
+    g_signal_connect(G_OBJECT(w->check_m),  "activate",G_CALLBACK(check_callback), w);
     g_signal_connect(G_OBJECT(w->restart_m),"activate",G_CALLBACK(sudoku_build), w);
     g_signal_connect(G_OBJECT(w->hard_m),   "activate",G_CALLBACK(difficulty_callback_hard), w);
     g_signal_connect(G_OBJECT(w->normal_m), "activate",G_CALLBACK(difficulty_callback_normal), w);
@@ -177,6 +259,7 @@ static void activate (GtkApplication *app, gpointer user_data)
         gtk_widget_set_size_request(w->entry[i],50, 50); 
         gtk_entry_set_width_chars(GTK_ENTRY(w->entry[i]),4);
         gtk_entry_set_alignment(GTK_ENTRY(w->entry[i]),0.5);
+        gtk_entry_set_max_length(GTK_ENTRY(w->entry[i]),2);
         gtk_grid_attach(GTK_GRID(w->grid),w->entry[i],x,y,1,1);
         x++;
         if(x == 9)
@@ -190,7 +273,7 @@ static void activate (GtkApplication *app, gpointer user_data)
             y++;
         } 
     }
-    sudoku_build(w->grid,w);
+    sudoku_build(GTK_GRID(w->grid),w);
     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
 
@@ -202,9 +285,7 @@ static void activate (GtkApplication *app, gpointer user_data)
     // gtk_statusbar_push((GtkStatusbar *)w->statusbar,w->id,"Test");
     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-
-
-    gtk_widget_show_all (GTK_WIDGET (window));
+    gtk_widget_show_all (GTK_WIDGET (w->window));
 }
 
 int main (int argc, char **argv)

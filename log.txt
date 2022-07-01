@@ -1,0 +1,72 @@
+commit 083e5aa9f4acc5c386bc3b25cb24f33bfcf3c5d5
+Merge: fce34d4 b002041
+Author: Marco Stundner <marco.ms553@gmail.com>
+Date:   Fri Jul 1 18:25:33 2022 +0000
+
+    Fehlende Funktionen laut ReadMe
+
+commit fce34d4a02b82f06077b045a59181696460a553e
+Author: Marco Stundner <marco.ms553@gmail.com>
+Date:   Fri Jul 1 18:22:56 2022 +0000
+
+    Fehlende Funktionen laut ReadMe
+
+commit 512d56cb9b12d34c0b4862b36d6d85c14bbfd15d
+Author: Marco Stundner <marco.ms553@gmail.com>
+Date:   Thu Jun 30 15:45:22 2022 +0000
+
+    css funktioniert und pop mess
+
+commit b002041b5dcc6c646db8c4f3e6502c04d7c7a184
+Author: DevMarcoStundner <101337732+DevMarcoStundner@users.noreply.github.com>
+Date:   Thu Jun 30 13:46:27 2022 +0000
+
+    Delete sudoku_css.gresource.xml
+
+commit cf152d0d7727026ff101a03d8cc0c75b7c7acb1c
+Author: DevMarcoStundner <101337732+DevMarcoStundner@users.noreply.github.com>
+Date:   Thu Jun 30 13:46:20 2022 +0000
+
+    Delete sudoku_css.c
+
+commit 9ef5332b83951f1a9213ee6f31ec36a4b2e8af6e
+Author: Marco Stundner <marco.ms553@gmail.com>
+Date:   Wed Jun 29 12:03:04 2022 +0000
+
+    Ziffern einfugen funktioniert aber css geht nicht
+
+commit 9a30436b29d8b4bdf720a4f2521bbf2ae60d81a9
+Author: Marco Stundner <marco.ms553@gmail.com>
+Date:   Tue Jun 28 13:49:18 2022 +0000
+
+    updated
+
+commit ce5db76c97af1bcda4a14087c3de5c50f16e20ec
+Author: Marco Stundner <marco.ms553@gmail.com>
+Date:   Mon Jun 27 16:28:42 2022 +0000
+
+    callbacks fuer diff und problem bei sudoku gen
+
+commit 827c5a2a3184e151381183ee84032555beaacfca
+Author: Marco Stundner <marco.ms553@gmail.com>
+Date:   Sun Jun 26 19:49:38 2022 +0000
+
+    Menubar added
+
+commit 8da171e6660c5f4566e07202628ebdafa3e46a0c
+Author: Marco Stundner <marco.ms553@gmail.com>
+Date:   Sun Jun 26 17:04:14 2022 +0000
+
+    Grid erstellt mit allen entrys
+
+commit 799758d855c671888945ff77c89103c1de4b68c3
+Author: Marco Stundner <marco.ms553@gmail.com>
+Date:   Thu Jun 23 14:22:42 2022 +0000
+
+    Added sudoku lib and conzept of gtk
+
+commit 3702620029e6c04bdffc8d4ec7772887387b345e
+Author: Marco Stundner <marco.ms553@gmail.com>
+Date:   Thu Jun 23 14:08:00 2022 +0000
+
+    First commit

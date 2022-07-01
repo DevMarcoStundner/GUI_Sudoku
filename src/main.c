@@ -6,7 +6,6 @@
 * Date 23.06.22
 * Build instructions:
 * clang main.c $(pkg-config --cflags --libs gtk+-3.0) -Wall -I. sudoku_c.c sudoku_css.c -lm 
-* glib-compile-resources --sourcedir=. sudoku_css.gresource.xml --generate-source
 */
 
 #include <gtk/gtk.h>
@@ -53,6 +52,14 @@ struct widget
     const char *text[N*N];
     GtkWidget *message_dialog;
     GtkWidget *label;
+    GDateTime *now;
+    gchar *my_time;
+    gint h;
+    gint m;
+    gdouble s;
+    gdouble s_count;
+    char *time_infobar;
+    bool timeflag;
 
 };
 
@@ -113,6 +120,28 @@ static void sudoku_build (GtkGrid *widget, gpointer user_data)
             } 
         }
     } 
+}
+
+static guint time_handler(gpointer user_data)
+{
+    struct widget *w = (struct widget *)user_data;
+    if(w->timeflag == true){w->s_count++;}
+
+    w->now = g_date_time_new_now_local(); 
+    w->h = g_date_time_get_hour(w->now);
+    w->m = g_date_time_get_minute(w->now);
+    w->s = g_date_time_get_seconds(w->now);
+    w->now = g_date_time_add_full(w->now,0,0,0,-w->h,-w->m,-w->s);
+    w->now = g_date_time_add_seconds(w->now,w->s_count);
+    w->my_time = g_date_time_format(w->now, "%H:%M:%S");
+    w->timeflag = true;
+
+  
+
+    g_free(w->my_time);
+    g_date_time_unref(w->now);
+
+    return true;
 }
 
 static void quit_callback (GSimpleAction *action, GVariant *parameter, gpointer user_data)
@@ -276,14 +305,15 @@ static void activate (GtkApplication *app, gpointer user_data)
     sudoku_build(GTK_GRID(w->grid),w);
     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
-
-    //STATUSBAR@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@    
+    //STATUSBAR@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@   
     w->statusbar = gtk_statusbar_new();
     gtk_widget_set_size_request (w->statusbar, 300, 10);
     gtk_box_pack_start (GTK_BOX (w->vbox), w->statusbar, FALSE, FALSE, 0);
-    w->id = gtk_statusbar_get_context_id (GTK_STATUSBAR (w->statusbar), "demo");
-    // gtk_statusbar_push((GtkStatusbar *)w->statusbar,w->id,"Test");
     //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
+
+   /*  g_timeout_add(1000, (GSourceFunc) time_handler, (gpointer) w->window);
+    w->id = gtk_statusbar_get_context_id (GTK_STATUSBAR (w->statusbar), "time");
+    gtk_statusbar_push((GtkStatusbar *)w->statusbar,w->id,w->my_time); */
 
     gtk_widget_show_all (GTK_WIDGET (w->window));
 }
@@ -296,10 +326,16 @@ int main (int argc, char **argv)
     d->hard = false;
     d->normal = true;
     d->easy =  false;
+    d->timeflag = false;
+    d->s_count = 0;
+
+    
 
 	d->app = gtk_application_new ("org.gtk.minimal", G_APPLICATION_FLAGS_NONE);
 	g_signal_connect (d->app, "activate", G_CALLBACK (activate), (gpointer) d);
+    
 	status = g_application_run (G_APPLICATION (d->app), argc, argv);
+   
 	g_object_unref (d->app);
     g_free (d);
 	return status;
